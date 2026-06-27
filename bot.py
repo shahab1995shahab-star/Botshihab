@@ -16,11 +16,14 @@ async def start(update: Update, context):
 
 async def reply(update: Update, context):
     msg = update.message.text
-    res = client.chat.completions.create(
-        model="deepseek-v4-flash",
-        messages=[{"role": "user", "content": msg}]
-    )
-    await update.message.reply_text(res.choices[0].message.content)
+    try:
+        res = client.chat.completions.create(
+            model="deepseek-v4-flash",
+            messages=[{"role": "user", "content": msg}]
+        )
+        await update.message.reply_text(res.choices[0].message.content)
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ حدث خطأ: {str(e)}")
 
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
