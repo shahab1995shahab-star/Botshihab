@@ -12,7 +12,7 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 async def start(update: Update, context):
-    await update.message.reply_text("أهلاً! أنا بوت DeepSeek. اسألني أي شيء.")
+    await update.message.reply_text("أهلاً! أنا بوت شهاب العوفي. اسألني أي شيء.")
 
 async def reply(update: Update, context):
     msg = update.message.text
