@@ -1,5 +1,4 @@
 import os
-import json
 from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -16,140 +15,243 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 if not TELEGRAM_TOKEN or not DEEPSEEK_API_KEY:
     raise ValueError("❌ المفاتيح غير موجودة! تأكد من ملف .env")
 
-# ================== العميل ==================
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
-# ================== بياناتك ==================
-MY_WORKS = {
-    "تصميم": "🎨 أقدم تصاميم جرافيك احترافية (شعارات - هويات - بوسترات)",
-    "برمجة": "💻 أبني بوتات ومواقع ويب وتطبيقات ذكية",
-    "تسويق": "📈 أدير حملات تسويقية وإعلانات مدفوعة",
-    "استشارات": "🧠 استشارات تقنية ورقمية"
-}
-
-PAYMENT_METHODS = """
-💳 **طرق الدفع المتاحة:**
-• باي بال: example@paypal.com
-• IBAN: SA1234567890123
-• جوال: 0501234567 (تحويل سريع)
-• عملات رقمية: USDT (TRC20)
-"""
-
-CONTACT_INFO = """
-📩 **للتواصل:**
-• واتساب: 0501234567
-• تويتر: @yourhandle
-• تيلغرام: @yourusername
-• البريد الإلكتروني: example@email.com
-"""
-
-ABOUT_TEXT = """
-🌟 **مرحباً بك في بوت خدمات شهاب!**
-
-أنا بوت ذكي يجمع بين الخدمات الاحترافية والذكاء الاصطناعي.
-أستطيع:
-✅ عرض خدماتي
-✅ الرد على استفساراتك
-✅ مساعدتك في اختيار الخدمة المناسبة
-✅ توجيهك لطرق الدفع والتواصل
-
-استخدم الأوامر:
-/start - للترحيب
-/works - عرض الخدمات
-/payment - طرق الدفع
-/contact - معلومات التواصل
-/about - عن البوت
-/clear - مسح المحادثة
-"""
-
-# ================== الذاكرة ==================
+# ================== ذاكرة المحادثة ==================
 sessions = defaultdict(list)
 MAX_HISTORY = 10
 
-# ================== الأوامر ==================
+# ================== بيانات متجر الرياض التعليمي ==================
+
+STORE_NAME = "🏫 متجر الرياض التعليمي"
+
+ABOUT_TEXT = f"""
+🌟 **{STORE_NAME}**
+
+متجر الرياض التعليمي هو منصة رائدة ومتخصصة في تقديم الحلول التعليمية الجاهزة للمعلمين والمعلمات والمشرفين التربويين في المملكة العربية السعودية والوطن العربي.
+
+نؤمن بأن التعليم هو أساس نهضة الأمم، ونسعى من خلال خدماتنا إلى تمكين الكوادر التعليمية من أداء رسالتهم النبيلة بكفاءة واحترافية.
+
+📌 **رؤيتنا:**
+أن نكون الشريك الأول والأكثر ثقة للمعلمين والمعلمات في رحلتهم التعليمية.
+
+📚 **رسالتنا:**
+تقديم ملفات تعليمية جاهزة ومتكاملة، مصممة بأعلى معايير الجودة والاحترافية.
+
+🤍 **شعارنا:**
+"نوفر وقتك.. ننفذ طلبك.. بجودة تحترم تعبك"
+
+📞 للتواصل: /contact
+🛒 لمعرفة الخدمات: /services
+💰 للأسعار: /prices
+"""
+
+SERVICES_TEXT = """
+🛒 **منتجاتنا وخدماتنا:**
+
+1️⃣ 📋 **ملفات الأداء الوظيفي**
+   · نماذج إلكترونية وورقية متكاملة
+   · ملفات الأداء الوظيفي الإلكترونية والورقية
+   · أدوات تقويم الأداء وفق أحدث الأنظمة
+
+2️⃣ 📊 **اختبارات نافس**
+   · نماذج محاكية لاختبارات نافس الوطنية
+   · تغطي جميع المراحل (الابتدائي والمتوسط)
+   · لجميع المواد (عربي، رياضيات، علوم)
+
+3️⃣ 🩺 **الخطط العلاجية والإثرائية**
+   · خطط علاجية لمعالجة الفاقد التعليمي
+   · خطط إثرائية لتنمية مهارات المتميزين
+   · تغطي جميع المراحل والمواد
+
+4️⃣ 📑 **عروض بوربوينت بالذكاء الاصطناعي**
+   · عروض احترافية وجذابة
+   · تفاعلية ومصممة بأحدث التقنيات
+   · تغطي المنهج كاملاً أو حسب الطلب
+
+5️⃣ 📄 **أوراق عمل احترافية**
+   · مميزة ومتنوعة
+   · وفق معايير التعلم النشط
+   · قابلة للتعديل لتناسب جميع المستويات
+
+6️⃣ 📻 **الإذاعة المدرسية بالذكاء الاصطناعي**
+   · نصوص إذاعية جاهزة ومخصصة
+   · محتوى إذاعي كامل لـ 12 شهراً
+
+📩 للطلب: /order
+💰 للأسعار: /prices
+📞 للتواصل: /contact
+"""
+
+PRICES_TEXT = """
+💰 **أسعارنا التنافسية:**
+
+📋 ملفات الأداء الوظيفي: **١٢٠ ريال**
+📊 اختبارات نافس (لكل مادة): **٧٠ ريال**
+🩺 خطط علاجية وإثرائية (لكل مادة): **٧٠ ريال**
+📑 عروض بوربوينت (لكل درس): **٢٥ ريال**
+📄 أوراق عمل (لكل ورقة): **١٠ ريال**
+📻 الإذاعة المدرسية (شهر كامل): **١٠٠ ريال**
+
+🎁 **عروض خاصة:**
+· حزمة المواد الثلاث (نافس + علاجي + إثرائي): **١٨٠ ريال**
+· حزمة الفصل الدراسي كاملاً: **٥٠٠ ريال**
+
+📩 للطلب: /order
+"""
+
+CONTACT_TEXT = """
+📞 **طرق التواصل معنا:**
+
+📧 البريد الإلكتروني: shahab1995shahab@gmail.com
+
+📱 واتساب: [اضغط هنا للتواصل](https://wa.me/966578371223)
+
+📲 تليجرام: @alryadplay
+
+📍 الموقع: الرياض – المملكة العربية السعودية
+نخدم جميع مناطق المملكة عبر التواصل الإلكتروني.
+
+🕐 الدعم الفني متاح على مدار الساعة.
+"""
+
+ORDER_TEXT = """
+📝 **لطلب ملفاتك التعليمية:**
+
+يرجى إرسال المعلومات التالية على واتساب:
+https://wa.me/966578371223
+
+📌 البيانات المطلوبة:
+1. اسم الملف المطلوب
+2. المرحلة الدراسية
+3. المادة
+4. الصف
+5. الفصل الدراسي
+6. أي تفاصيل إضافية
+
+📞 أو تواصل معنا مباشرة على تليجرام: @alryadplay
+
+✅ سيتم الرد عليك في أقرب وقت ممكن.
+"""
+
+WHY_US_TEXT = """
+💎 **لماذا تختار متجر الرياض التعليمي؟**
+
+1️⃣ **الجودة والاحترافية**
+   · منتجاتنا مصممة بأعلى معايير الجودة من قبل خبراء تربويين
+
+2️⃣ **توفير الوقت والجهد**
+   · نوفر عليك ساعات من العمل في إعداد الملفات والخطط
+
+3️⃣ **قابلة للتعديل والتخصيص**
+   · جميع الملفات بصيغ قابلة للتعديل (Word، PowerPoint)
+
+4️⃣ **الذكاء الاصطناعي في التعليم**
+   · نستخدم أحدث التقنيات لتصميم عروض وألعاب تفاعلية
+
+5️⃣ **التحديث المستمر**
+   · نواكب أحدث التغييرات في المناهج والأنظمة
+
+6️⃣ **الدعم الفني المتميز**
+   · فريقنا متاح على مدار الساعة
+
+7️⃣ **أسعار تنافسية**
+   · منتجاتنا بأسعار مناسبة مع أعلى مستويات الجودة
+
+🤍 **شعارنا:**
+"نوفر وقتك.. ننفذ طلبك.. بجودة تحترم تعبك"
+"""
+
+# ================== أوامر البوت ==================
+
 async def start(update: Update, context):
     await update.message.reply_text(ABOUT_TEXT)
 
-async def works(update: Update, context):
-    text = "🛠️ **خدماتي:**\n\n"
-    for k, v in MY_WORKS.items():
-        text += f"• **{k}**: {v}\n"
-    text += "\n💡 أرسل سؤالك وسأساعدك في اختيار الخدمة المناسبة!"
-    await update.message.reply_text(text)
+async def services(update: Update, context):
+    await update.message.reply_text(SERVICES_TEXT)
 
-async def payment(update: Update, context):
-    await update.message.reply_text(PAYMENT_METHODS)
+async def prices(update: Update, context):
+    await update.message.reply_text(PRICES_TEXT)
 
 async def contact(update: Update, context):
-    await update.message.reply_text(CONTACT_INFO)
+    await update.message.reply_text(CONTACT_TEXT)
 
-async def about(update: Update, context):
-    await update.message.reply_text(ABOUT_TEXT)
+async def order(update: Update, context):
+    await update.message.reply_text(ORDER_TEXT)
+
+async def why_us(update: Update, context):
+    await update.message.reply_text(WHY_US_TEXT)
 
 async def clear(update: Update, context):
     uid = update.effective_user.id
     sessions[uid] = []
     await update.message.reply_text("🧹 تم مسح المحادثة بنجاح!")
 
+async def about(update: Update, context):
+    await update.message.reply_text(ABOUT_TEXT)
+
 # ================== الرد الذكي ==================
+
 async def reply(update: Update, context):
     uid = update.effective_user.id
     msg = update.message.text
     msg_lower = msg.lower()
 
-    # ===== 1. حفظ الطلب في ملف =====
+    # تسجيل الطلبات
     try:
         with open("requests.txt", "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now()} | @{update.effective_user.username or 'مجهول'} | {msg}\n")
+            username = update.effective_user.username or "مجهول"
+            f.write(f"{datetime.now()} | @{username} | {msg}\n")
     except:
         pass
 
-    # ===== 2. الكلمات المفتاحية (أولوية قصوى) =====
-    if any(word in msg_lower for word in ["سعر", "تكلفة", "كم", "بكم"]):
+    # ===== كلمات مفتاحية سريعة =====
+
+    if any(w in msg_lower for w in ["سعر", "تكلفة", "بكم", "كم"]):
+        await update.message.reply_text(PRICES_TEXT)
+        return
+
+    if any(w in msg_lower for w in ["طلب", "اشتري", "شراء", "طلبك", "/order"]):
+        await update.message.reply_text(ORDER_TEXT)
+        return
+
+    if any(w in msg_lower for w in ["خدمات", "منتجات", "تقدمون", "عندكم"]):
+        await update.message.reply_text(SERVICES_TEXT)
+        return
+
+    if any(w in msg_lower for w in ["تواصل", "رقم", "جوال", "واتس", "تليجرام"]):
+        await update.message.reply_text(CONTACT_TEXT)
+        return
+
+    if any(w in msg_lower for w in ["شكرا", "ممتاز", "جميل", "رائع", "الله يبارك"]):
         await update.message.reply_text(
-            "💰 **الأسعار حسب الخدمة:**\n"
-            "• التصميم: يبدأ من 200 ريال\n"
-            "• البرمجة: يبدأ من 500 ريال\n"
-            "• التسويق: يبدأ من 300 ريال\n"
-            "• الاستشارات: 150 ريال/ساعة\n\n"
-            "📩 أرسل /contact للتفاصيل الدقيقة"
+            "🙏 **العفو!** نحن في خدمتك دائماً.\n"
+            "هل تحتاج مساعدة إضافية؟\n"
+            "📞 للتواصل: /contact"
         )
         return
 
-    if any(word in msg_lower for word in ["دفع", "حساب", "تحويل", "باي بال"]):
-        await update.message.reply_text(PAYMENT_METHODS)
+    if any(w in msg_lower for w in ["من أنتم", "من انتم", "نبذة", "عنكم"]):
+        await update.message.reply_text(ABOUT_TEXT)
         return
 
-    if any(word in msg_lower for word in ["شكرا", "ممتاز", "جميل", "رائع"]):
-        await update.message.reply_text("🙏 **العفو!** نحن في خدمتك دائماً.\nهل تحتاج مساعدة إضافية؟")
-        return
+    # ===== الذكاء الاصطناعي =====
 
-    if any(word in msg_lower for word in ["خدمات", "شغلات", "تقدم"]):
-        await update.message.reply_text(
-            "🛠️ **خدماتي:**\n"
-            "• تصميم جرافيك\n"
-            "• برمجة وتطوير\n"
-            "• تسويق وإعلانات\n"
-            "• استشارات تقنية\n\n"
-            "📌 أرسل /works للتفاصيل"
-        )
-        return
-
-    # ===== 3. الذكاء الاصطناعي (DeepSeek) =====
     try:
-        # حفظ تاريخ المحادثة
         sessions[uid].append({"role": "user", "content": msg})
         sessions[uid] = sessions[uid][-MAX_HISTORY:]
 
-        # إرسال الطلب
         res = client.chat.completions.create(
             model="deepseek-v4-flash",
             messages=[
                 {"role": "system", "content": (
-                    "أنت مساعد خدمة عملاء ذكي لرجل أعمال يقدم خدمات (تصميم، برمجة، تسويق، استشارات).\n"
-                    "رد باختصار ومفيد، بلغة عربية فصحى أو عامية مفهومة.\n"
-                    "إذا سأل عن الأسعار، قل أن الأسعار تبدأ من 200 ريال حسب الخدمة.\n"
-                    "إذا سأل عن التواصل، وجهه لأمر /contact."
+                    "أنت مساعد خدمة عملاء لمتجر الرياض التعليمي.\n"
+                    "متجر متخصص في الملفات التعليمية للمعلمين في السعودية.\n"
+                    "الخدمات: ملفات أداء وظيفي، اختبارات نافس، خطط علاجية وإثرائية، عروض بوربوينت، أوراق عمل، إذاعة مدرسية.\n"
+                    "رد باختصار ومفيد، بلغة عربية فصحى.\n"
+                    "إذا سأل عن الأسعار، قل: للأسعار أرسل /prices\n"
+                    "إذا سأل عن الطلب، قل: للطلب أرسل /order\n"
+                    "إذا سأل عن التواصل، قل: للتواصل أرسل /contact"
                 )}
             ] + sessions[uid]
         )
@@ -159,36 +261,38 @@ async def reply(update: Update, context):
         await update.message.reply_text(reply_text)
 
     except Exception as e:
-        error_msg = str(e)
-        if "402" in error_msg or "Insufficient Balance" in error_msg:
+        if "402" in str(e) or "Insufficient Balance" in str(e):
             await update.message.reply_text(
                 "⚠️ **رصيد API غير كافٍ!**\n"
                 "الرجاء شحن الرصيد من منصة DeepSeek.\n"
-                "للتواصل المباشر أرسل /contact"
+                "📞 للتواصل المباشر: /contact"
             )
         else:
             await update.message.reply_text(
                 "📩 **شكراً لتواصلك!**\n"
-                "سأرد عليك قريباً يدوياً.\n"
-                "للتواصل المباشر: /contact"
+                "سيتم الرد عليك قريباً.\n"
+                "📞 للتواصل المباشر: /contact"
             )
 
 # ================== تشغيل البوت ==================
+
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
     # الأوامر
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("works", works))
-    app.add_handler(CommandHandler("payment", payment))
+    app.add_handler(CommandHandler("services", services))
+    app.add_handler(CommandHandler("prices", prices))
     app.add_handler(CommandHandler("contact", contact))
+    app.add_handler(CommandHandler("order", order))
+    app.add_handler(CommandHandler("whyus", why_us))
     app.add_handler(CommandHandler("about", about))
     app.add_handler(CommandHandler("clear", clear))
 
     # الردود
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
 
-    print("🤖 البوت شغال...")
+    print("🤖 بوت متجر الرياض التعليمي شغال...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
